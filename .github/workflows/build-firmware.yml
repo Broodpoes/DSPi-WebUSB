@@ -6,6 +6,7 @@ on:
     paths:
       - 'firmware/**'
       - '.github/workflows/build-firmware.yml'
+    tags: ['v*']
   pull_request:
     paths:
       - 'firmware/**'
@@ -41,8 +42,41 @@ jobs:
           cmake -DPICO_BOARD=${{ matrix.board }} ../firmware
           make -j$(nproc)
 
-      - name: Upload UF2
+      - name: Upload artifact
         uses: actions/upload-artifact@v4
         with:
           name: DSPi-${{ matrix.label }}
           path: build/DSPi/DSPi.uf2
+
+  release:
+    needs: build
+    if: startsWith(github.ref, 'refs/tags/v')
+    runs-on: ubuntu-latest
+    permissions:
+      contents: write
+
+    steps:
+      - name: Download RP2040 artifact
+        uses: actions/download-artifact@v4
+        with:
+          name: DSPi-RP2040
+          path: artifacts/RP2040
+
+      - name: Download RP2350 artifact
+        uses: actions/download-artifact@v4
+        with:
+          name: DSPi-RP2350
+          path: artifacts/RP2350
+
+      - name: Rename for release
+        run: |
+          cp artifacts/RP2040/DSPi.uf2 DSPi-RP2040.uf2
+          cp artifacts/RP2350/DSPi.uf2 DSPi-RP2350.uf2
+
+      - name: Create release
+        uses: softprops/action-gh-release@v2
+        with:
+          generate_release_notes: true
+          files: |
+            DSPi-RP2040.uf2
+            DSPi-RP2350.uf2
