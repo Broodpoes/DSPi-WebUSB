@@ -102,14 +102,13 @@
     <!-- Connection screen (shown when not connected) -->
     <div class="connect-panel" id="connectPanel">
         <h1 style="font-size:24px; color:var(--accent);">DSPi Web Interface</h1>
-        <p>Connect to your DSPi device via WebUSB (Chrome) or through the Python bridge server.</p>
+        <p>Connect your DSPi device via WebUSB.</p>
         <button class="btn" id="connectWebUSB" onclick="app.connectWebUSB()">Connect via WebUSB</button>
-        <button class="btn-outline" onclick="app.connectBridge()">Connect via Bridge</button>
-        <p style="font-size:11px;">Bridge: run <code style="background:var(--surface2); padding:2px 6px; border-radius:3px;">python bridge.py</code> then click above</p>
+        <p style="font-size:11px;">Requires Chrome, Edge, or Opera. <a href="https://caniuse.com/webusb" target="_blank" style="color:var(--accent);">Browser support</a></p>
     </div>
 
     <script type="module">
-        import { WebUSBTransport, WebSocketTransport } from './transport.js';
+        import { WebUSBTransport } from './transport.js';
         import { DSPiClient } from './dspi-client.js';
         import { renderEQCurve } from './eq-curve.js';
         import { renderMeters, parseMeterData } from './meters.js';
@@ -157,19 +156,7 @@
                 }
             },
 
-            async connectBridge() {
-                try {
-                    const t = new WebSocketTransport();
-                    await t.connect();
-                    t.onDisconnect(() => this._onDisconnect());
-                    this.transport = t;
-                    this.client = new DSPiClient(t);
-                    await this._onConnect();
-                } catch (e) {
-                    alert("Bridge connection failed: " + e.message +
-                          "\n\nMake sure bridge.py is running: python web/bridge/bridge.py");
-                }
-            },
+
 
             async _onConnect() {
                 document.getElementById('connectPanel').style.display = 'none';
