@@ -255,7 +255,7 @@ const struct audio_device_config audio_device_config = {
 const struct usb_device_descriptor boot_device_descriptor = {
     .bLength            = 18,
     .bDescriptorType    = 0x01,
-    .bcdUSB             = 0x0200,
+    .bcdUSB             = 0x0210,            // USB 2.0.1 — required for BOS descriptor (WebUSB)
     .bDeviceClass       = 0x00,
     .bDeviceSubClass    = 0x00,
     .bDeviceProtocol    = 0x00,
@@ -316,4 +316,55 @@ const uint8_t ms_ext_prop_descriptor[MS_EXT_PROP_DESC_LEN] = {
     '9', 0x00, 'F', 0x00, '0', 0x00, '-', 0x00, 'B', 0x00, 'C', 0x00, '3', 0x00, 'D', 0x00,
     '-', 0x00, 'A', 0x00, '4', 0x00, 'F', 0x00, 'F', 0x00, '1', 0x00, '3', 0x00, '8', 0x00,
     '2', 0x00, '1', 0x00, '6', 0x00, 'D', 0x00, '6', 0x00, '}', 0x00, 0x00, 0x00
+};
+
+// ----------------------------------------------------------------------------
+// BOS DESCRIPTOR (WebUSB)
+// ----------------------------------------------------------------------------
+
+// WebUSB Platform Capability UUID: 3408b638-09a9-47a0-8bfd-a0768815b665
+// Binary (little-endian UUID fields): 38 B6 08 34 A9 09 A0 47 8B FD A0 76 88 15 B6 65
+
+#define WEBUSB_VENDOR_CODE  0x02    // Different from MS_VENDOR_CODE (0x01)
+
+const uint8_t bos_descriptor[] = {
+    // BOS header (5 bytes)
+    0x05,                           // bLength
+    0x0F,                           // bDescriptorType = BOS
+    0x1D, 0x00,                     // wTotalLength = 29 (5 + 24)
+    0x01,                           // bNumDeviceCaps = 1
+    // WebUSB Platform Capability Descriptor (24 bytes)
+    0x18,                           // bLength = 24
+    0x10,                           // bDescriptorType = Device Capability
+    0x05,                           // bDevCapabilityType = Platform
+    0x00,                           // bReserved
+    // WebUUID (16 bytes)
+    0x38, 0xB6, 0x08, 0x34,
+    0xA9, 0x09, 0xA0, 0x47,
+    0x8B, 0xFD, 0xA0, 0x76,
+    0x88, 0x15, 0xB6, 0x65,
+    // Capability data
+    0x00, 0x01,                     // bcdVersion = 1.0
+    0x02,                           // bDevCapabilityCode = URL
+    WEBUSB_VENDOR_CODE,             // wVendorCode
+    0x01,                           // iLandingPage (index into URL descriptor)
+};
+
+const uint16_t bos_descriptor_len = sizeof(bos_descriptor);
+
+// ----------------------------------------------------------------------------
+// WEBUSB URL DESCRIPTOR
+// ----------------------------------------------------------------------------
+
+// URL scheme: 0x01=HTTP, 0x02=HTTP+UTF-8, 0x03=HTTPS
+// The landing page URL where the browser navigates when the user clicks
+// "Connect" in the WebUSB permission prompt.
+#define WEBUSB_URL_SCHEME   0x01    // HTTP (use 0x03 for HTTPS)
+
+// URL: weeblabs.github.io/dspi-web (27 chars)
+const uint8_t webusb_url_descriptor[] = {
+    0x1E,                           // bLength = 3 + 27 = 30
+    0x03,                           // bDescriptorType = URL
+    WEBUSB_URL_SCHEME,              // bScheme = HTTP
+    'w', 'e', 'e', 'b', 'l', 'a', 'b', 's', '.', 'g', 'i', 't', 'h', 'u', 'b', '.', 'i', 'o', '/', 'd', 's', 'p', 'i', '-', 'w', 'e', 'b'
 };

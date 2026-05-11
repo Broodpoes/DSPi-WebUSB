@@ -3179,6 +3179,22 @@ static bool device_setup_request_handler(struct usb_device *dev, struct usb_setu
         }
     }
 
+    // Handle WebUSB vendor requests (landing page URL)
+    // Browser sends: bmRequestType=0xC1 (IN, vendor), bRequest=WEBUSB_VENDOR_CODE, wIndex=0x0002
+    if ((setup->bmRequestType & USB_REQ_TYPE_TYPE_MASK) == USB_REQ_TYPE_TYPE_VENDOR &&
+        setup->bRequest == WEBUSB_VENDOR_CODE &&
+        (setup->bmRequestType & USB_DIR_IN)) {
+        switch (setup->wIndex) {
+            case 0x0002: { // GET_URL
+                extern const uint8_t webusb_url_descriptor[];
+                uint8_t url_len = webusb_url_descriptor[0]; // bLength is first byte
+                uint16_t len = setup->wLength < url_len ? setup->wLength : url_len;
+                vendor_send_response(webusb_url_descriptor, len);
+                return true;
+            }
+        }
+    }
+
     return false;
 }
 

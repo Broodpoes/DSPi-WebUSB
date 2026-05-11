@@ -707,6 +707,14 @@ static int _usb_handle_get_descriptor(uint8_t *buf, uint buf_len, struct usb_set
             }
             break;
         }
+        case 0x0F: { // BOS Descriptor (WebUSB)
+            usb_trace("GET BOS DESCRIPTOR\n");
+            extern const uint8_t bos_descriptor[];
+            extern const uint16_t bos_descriptor_len;
+            len = bos_descriptor_len;
+            src = bos_descriptor;
+            break;
+        }
     }
     if (src && len > 0) {
         assert(len <= buf_len);

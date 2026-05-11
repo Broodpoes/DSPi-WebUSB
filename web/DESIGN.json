@@ -1,0 +1,141 @@
+{
+  "schemaVersion": 2,
+  "generatedAt": "2026-05-11T20:40:00Z",
+  "title": "Design System: DSPi Control Panel",
+  "extensions": {
+    "colorMeta": {
+      "background": { "role": "neutral", "displayName": "Background", "canonical": "oklch(0.145 0.006 270)", "tonalRamp": ["oklch(0.06 0.006 270)", "oklch(0.09 0.006 270)", "oklch(0.12 0.006 270)", "oklch(0.145 0.006 270)", "oklch(0.18 0.006 270)", "oklch(0.205 0.006 270)", "oklch(0.24 0.008 270)", "oklch(0.269 0.008 270)"] },
+      "foreground": { "role": "neutral", "displayName": "Foreground", "canonical": "oklch(0.985 0.004 270)", "tonalRamp": ["oklch(0.80 0.004 270)", "oklch(0.85 0.004 270)", "oklch(0.88 0.004 270)", "oklch(0.91 0.006 270)", "oklch(0.94 0.006 270)", "oklch(0.96 0.004 270)", "oklch(0.985 0.004 270)", "oklch(0.995 0.002 270)"] },
+      "card": { "role": "neutral", "displayName": "Card Surface", "canonical": "oklch(0.205 0.006 270)", "tonalRamp": ["oklch(0.06 0.006 270)", "oklch(0.09 0.006 270)", "oklch(0.12 0.006 270)", "oklch(0.145 0.006 270)", "oklch(0.18 0.006 270)", "oklch(0.205 0.006 270)", "oklch(0.24 0.008 270)", "oklch(0.269 0.008 270)"] },
+      "primary": { "role": "primary", "displayName": "Surface White", "canonical": "oklch(0.922 0.008 270)", "tonalRamp": ["oklch(0.10 0.008 270)", "oklch(0.20 0.008 270)", "oklch(0.35 0.008 270)", "oklch(0.50 0.008 270)", "oklch(0.65 0.008 270)", "oklch(0.78 0.008 270)", "oklch(0.922 0.008 270)", "oklch(0.97 0.004 270)"] },
+      "muted": { "role": "neutral", "displayName": "Muted Surface", "canonical": "oklch(0.269 0.008 270)", "tonalRamp": ["oklch(0.06 0.008 270)", "oklch(0.09 0.008 270)", "oklch(0.12 0.008 270)", "oklch(0.145 0.008 270)", "oklch(0.18 0.008 270)", "oklch(0.205 0.008 270)", "oklch(0.24 0.008 270)", "oklch(0.269 0.008 270)"] },
+      "muted-foreground": { "role": "neutral", "displayName": "Muted Text", "canonical": "oklch(0.708 0.01 270)", "tonalRamp": ["oklch(0.20 0.01 270)", "oklch(0.30 0.01 270)", "oklch(0.40 0.01 270)", "oklch(0.50 0.01 270)", "oklch(0.556 0.01 270)", "oklch(0.632 0.01 270)", "oklch(0.708 0.01 270)", "oklch(0.85 0.008 270)"] },
+      "destructive": { "role": "semantic", "displayName": "Destructive", "canonical": "oklch(0.704 0.191 22)", "tonalRamp": ["oklch(0.15 0.191 22)", "oklch(0.25 0.191 22)", "oklch(0.35 0.191 22)", "oklch(0.45 0.191 22)", "oklch(0.577 0.245 27)", "oklch(0.65 0.191 22)", "oklch(0.704 0.191 22)", "oklch(0.85 0.10 22)"] },
+      "curve": { "role": "canvas", "displayName": "Curve Cyan", "canonical": "oklch(0.78 0.16 210)", "tonalRamp": ["oklch(0.15 0.16 210)", "oklch(0.25 0.16 210)", "oklch(0.35 0.16 210)", "oklch(0.48 0.16 210)", "oklch(0.58 0.16 210)", "oklch(0.68 0.16 210)", "oklch(0.78 0.16 210)", "oklch(0.88 0.08 210)"] },
+      "marker-boost": { "role": "canvas", "displayName": "Boost Marker", "canonical": "oklch(0.82 0.18 155)", "tonalRamp": ["oklch(0.15 0.18 155)", "oklch(0.25 0.18 155)", "oklch(0.35 0.18 155)", "oklch(0.48 0.18 155)", "oklch(0.58 0.18 155)", "oklch(0.68 0.18 155)", "oklch(0.82 0.18 155)", "oklch(0.92 0.09 155)"] },
+      "marker-cut": { "role": "canvas", "displayName": "Cut Marker", "canonical": "oklch(0.68 0.2 20)", "tonalRamp": ["oklch(0.10 0.2 20)", "oklch(0.20 0.2 20)", "oklch(0.30 0.2 20)", "oklch(0.40 0.2 20)", "oklch(0.50 0.2 20)", "oklch(0.58 0.2 20)", "oklch(0.68 0.2 20)", "oklch(0.85 0.10 20)"] }
+    },
+    "typographyMeta": {
+      "body": { "displayName": "Body", "purpose": "Default text for all UI content, parameter values, labels." },
+      "title": { "displayName": "Section Title", "purpose": "Card headers and section labels." },
+      "label": { "displayName": "Compact Label", "purpose": "Channel abbreviations, badges, dense parameter names." },
+      "mono": { "displayName": "Mono Numerals", "purpose": "Canvas frequency/dB grid labels, meter values." }
+    },
+    "shadows": [],
+    "motion": [
+      { "name": "state-transition", "value": "cubic-bezier(0.4, 0, 0.2, 1)", "purpose": "Default 150ms ease for hover/focus/active state changes." },
+      { "name": "press-feedback", "value": "cubic-bezier(0.4, 0, 1, 1)", "purpose": "Active/press state, slightly faster ease-in for tactile response." }
+    ],
+    "breakpoints": [
+      { "name": "sm", "value": "640px" },
+      { "name": "md", "value": "768px" },
+      { "name": "lg", "value": "1024px" },
+      { "name": "xl", "value": "1280px" }
+    ]
+  },
+  "components": [
+    {
+      "name": "Primary Button",
+      "kind": "button",
+      "refersTo": "button-primary",
+      "description": "Default action button. Surface white on dark card surfaces.",
+      "html": "<button class=\"ds-btn-primary\">Save</button>",
+      "css": ".ds-btn-primary { display: inline-flex; align-items: center; justify-content: center; height: 2rem; padding: 0 0.625rem; border: none; border-radius: 0.625rem; background: oklch(0.922 0.008 270); color: oklch(0.205 0.006 270); font-family: 'Geist Variable', system-ui, sans-serif; font-size: 0.875rem; font-weight: 500; cursor: pointer; transition: all 150ms cubic-bezier(0.4, 0, 0.2, 1); } .ds-btn-primary:hover { opacity: 0.8; } .ds-btn-primary:focus-visible { outline: none; border: 1px solid oklch(0.556 0.01 270); box-shadow: 0 0 0 3px oklch(0.556 0.01 270 / 50%); } .ds-btn-primary:active { transform: translateY(1px); } .ds-btn-primary:disabled { opacity: 0.5; pointer-events: none; }"
+    },
+    {
+      "name": "Outline Button",
+      "kind": "button",
+      "refersTo": "button-outline",
+      "description": "Secondary action. Transparent with border, fills on hover.",
+      "html": "<button class=\"ds-btn-outline\">Factory Reset</button>",
+      "css": ".ds-btn-outline { display: inline-flex; align-items: center; justify-content: center; height: 2rem; padding: 0 0.625rem; border: 1px solid oklch(1 0 0 / 10%); border-radius: 0.625rem; background: transparent; color: oklch(0.985 0.004 270); font-family: 'Geist Variable', system-ui, sans-serif; font-size: 0.875rem; font-weight: 500; cursor: pointer; transition: all 150ms cubic-bezier(0.4, 0, 0.2, 1); } .ds-btn-outline:hover { background: oklch(0.269 0.008 270); color: oklch(0.985 0.004 270); } .ds-btn-outline:focus-visible { border-color: oklch(0.556 0.01 270); box-shadow: 0 0 0 3px oklch(0.556 0.01 270 / 50%); } .ds-btn-outline:active { transform: translateY(1px); }"
+    },
+    {
+      "name": "Card Container",
+      "kind": "card",
+      "refersTo": "card",
+      "description": "Raised work surface for grouped controls. No shadow, tonal layer + ghost border.",
+      "html": "<div class=\"ds-card\"><div class=\"ds-card-header\"><div class=\"ds-card-title\">Master EQ</div></div><div class=\"ds-card-content\"><p>Content here</p></div></div>",
+      "css": ".ds-card { display: flex; flex-direction: column; gap: 1rem; overflow: hidden; border-radius: 0.875rem; background: oklch(0.205 0.006 270); color: oklch(0.985 0.004 270); padding: 1rem 0; box-shadow: none; outline: 1px solid oklch(0.985 0.004 270 / 10%); font-size: 0.875rem; } .ds-card-header { padding: 0 1rem; } .ds-card-title { font-size: 0.875rem; font-weight: 500; line-height: 1.25; } .ds-card-content { padding: 0 1rem; }"
+    },
+    {
+      "name": "Slider",
+      "kind": "custom",
+      "refersTo": "slider-track",
+      "description": "Continuous value input for dB, frequency, gain. Full-round track with filled indicator.",
+      "html": "<div class=\"ds-slider\"><div class=\"ds-slider-track\"><div class=\"ds-slider-fill\" style=\"width: 60%\"></div></div><div class=\"ds-slider-thumb\" style=\"left: 60%\"></div></div>",
+      "css": ".ds-slider { position: relative; width: 100%; height: 1.5rem; display: flex; align-items: center; } .ds-slider-track { position: relative; width: 100%; height: 0.25rem; border-radius: 9999px; background: oklch(0.269 0.008 270); overflow: hidden; } .ds-slider-fill { height: 100%; background: oklch(0.922 0.008 270); border-radius: 9999px; transition: none; } .ds-slider-thumb { position: absolute; width: 0.75rem; height: 0.75rem; border-radius: 50%; background: #ffffff; border: 1px solid oklch(0.556 0.01 270); transform: translateX(-50%); cursor: grab; transition: box-shadow 150ms cubic-bezier(0.4, 0, 0.2, 1); } .ds-slider-thumb:hover { box-shadow: 0 0 0 3px oklch(0.556 0.01 270 / 50%); }"
+    },
+    {
+      "name": "Switch Toggle",
+      "kind": "custom",
+      "refersTo": "switch",
+      "description": "Binary toggle for bypass, mute. Pill shape with sliding thumb.",
+      "html": "<button class=\"ds-switch ds-switch-checked\" role=\"switch\" aria-checked=\"true\"><span class=\"ds-switch-thumb\"></span></button>",
+      "css": ".ds-switch { position: relative; display: inline-flex; align-items: center; width: 32px; height: 18.4px; border-radius: 9999px; border: none; background: oklch(1 0 0 / 15%); cursor: pointer; transition: background 150ms cubic-bezier(0.4, 0, 0.2, 1); padding: 0; } .ds-switch-checked { background: oklch(0.922 0.008 270); } .ds-switch-thumb { position: absolute; width: 16px; height: 16px; border-radius: 50%; background: #ffffff; transition: transform 150ms cubic-bezier(0.4, 0, 0.2, 1); left: 1px; } .ds-switch-checked .ds-switch-thumb { transform: translateX(14px); background: oklch(0.205 0.006 270); } .ds-switch:focus-visible { border: 1px solid oklch(0.556 0.01 270); box-shadow: 0 0 0 3px oklch(0.556 0.01 270 / 50%); }"
+    },
+    {
+      "name": "Number Input",
+      "kind": "input",
+      "refersTo": "input",
+      "description": "Compact inline numeric input for EQ parameters in table cells.",
+      "html": "<input type=\"number\" class=\"ds-input\" value=\"1000.0\" />",
+      "css": ".ds-input { height: 1.75rem; padding: 0 0.25rem; border: 1px solid transparent; border-radius: calc(0.625rem * 0.8); background: transparent; color: oklch(0.985 0.004 270); font-family: 'Geist Variable', system-ui, sans-serif; font-size: 0.75rem; outline: none; transition: border-color 150ms, box-shadow 150ms; } .ds-input:focus { border-color: oklch(0.556 0.01 270); box-shadow: 0 0 0 3px oklch(0.556 0.01 270 / 50%); }"
+    },
+    {
+      "name": "Badge",
+      "kind": "custom",
+      "refersTo": "badge-outline",
+      "description": "Compact status pill for connection type, platform info.",
+      "html": "<span class=\"ds-badge-outline\">WebUSB</span>",
+      "css": ".ds-badge-outline { display: inline-flex; align-items: center; height: 1.25rem; padding: 0 0.5rem; border-radius: 9999px; border: 1px solid oklch(1 0 0 / 10%); background: transparent; color: oklch(0.985 0.004 270); font-family: 'Geist Variable', system-ui, sans-serif; font-size: 0.75rem; font-weight: 500; }"
+    },
+    {
+      "name": "Preset Button",
+      "kind": "button",
+      "refersTo": "button-ghost",
+      "description": "Preset slot selector in a 2-column grid. Active state uses primary accent background tint.",
+      "html": "<button class=\"ds-preset ds-preset-active\">Slot 1</button>",
+      "css": ".ds-preset { display: block; width: 100%; padding: 0.375rem 0.5rem; border: 1px solid oklch(1 0 0 / 10%); border-radius: calc(0.625rem * 0.6); background: transparent; color: oklch(0.985 0.004 270); font-family: 'Geist Variable', system-ui, sans-serif; font-size: 0.75rem; text-align: center; cursor: pointer; transition: all 150ms cubic-bezier(0.4, 0, 0.2, 1); } .ds-preset:hover { border-color: oklch(0.922 0.008 270 / 50%); } .ds-preset-active { border-color: oklch(0.922 0.008 270); background: oklch(0.922 0.008 270 / 10%); color: oklch(0.922 0.008 270); }"
+    }
+  ],
+  "narrative": {
+    "northStar": "The Calibration Bench",
+    "overview": "A focused workspace where every element is a precision instrument. Like an electronics lab bench under focused task lighting, the DSPi control panel surfaces only what matters: the signal path, the parameters, the measurements. No decorative UI chrome, no ambient decoration, no visual noise.\n\nThe system is built on tonal layering, not shadow elevation. Surfaces are distinguished by slight lightness differences within a narrow range (oklch L 0.08 to 0.27). Interaction feedback is immediate and tactile: state changes at 150ms, parameter updates reflected in real time on the EQ curve. Typography is a single sans family (Geist Variable) used across all roles, differentiated by weight and size alone. The only saturated color on screen is the EQ response curve and meter gradient: a cool cyan that reads clearly against the dark canvas without competing for attention.",
+    "keyCharacteristics": [
+      "Dark, tonally layered surfaces with no shadow elevation",
+      "Single accent (cool cyan, ~oklch 0.78 0.16 210) reserved for signal visualization only",
+      "Geist Variable as the sole typeface, all roles",
+      "Canvas elements (EQ curve, meters) are the visual anchors, not UI chrome",
+      "Tight spacing, dense information, minimal decorative whitespace",
+      "All state changes at 150ms ease-out"
+    ],
+    "rules": [
+      { "name": "The Signal Path Rule", "body": "Saturated chroma (C > 0.05 in OKLCH) is reserved for canvas elements that represent audio signal: the EQ curve, meter bars, and band markers. All UI chrome (buttons, cards, borders, text) stays within the achromatic neutral band (C < 0.01). If a saturated color appears outside a canvas, it is wrong.", "section": "colors" },
+      { "name": "The Tonal Stack Rule", "body": "Surfaces convey depth through lightness differences, never shadows. The stack from bottom to top: Background (L 0.145), Card (L 0.205), Muted/Secondary (L 0.269). Adjacent layers differ by L ~0.06. No box-shadow on any UI element.", "section": "colors" },
+      { "name": "The Single Family Rule", "body": "One typeface, Geist Variable, for all UI text. No display fonts, no serif accents, no secondary sans. Weight and size create hierarchy; font-family switches would be noise.", "section": "typography" },
+      { "name": "The No Shadow Rule", "body": "No element on screen uses box-shadow. If depth is ambiguous, increase the lightness gap between adjacent surfaces or add a ghost border at 10% foreground opacity.", "section": "elevation" }
+    ],
+    "dos": [
+      "Do use tonal layering (lightness differences of L 0.06 between adjacent surfaces) for depth, never shadows.",
+      "Do reserve the cool cyan accent (oklch 0.78 0.16 210) exclusively for signal path visualization: the EQ curve, curve fill, and active-state canvas elements.",
+      "Do keep all UI chrome within the achromatic neutral band (chroma < 0.01 in OKLCH).",
+      "Do use Geist Variable at its regular (400) and medium (500) weights for all UI text.",
+      "Do make state changes feel immediate with 150ms transitions.",
+      "Do maintain a minimum 4.5:1 contrast ratio for all text against its immediate background, per WCAG AA.",
+      "Do support keyboard navigation for all controls."
+    ],
+    "donts": [
+      "Don't use box-shadow on any UI element.",
+      "Don't apply saturated colors to UI chrome.",
+      "Don't use side-stripe borders (border-left or border-right greater than 1px) as colored accents.",
+      "Don't create identical card grids with icon + heading + text repeated.",
+      "Don't use display fonts or serifs in any UI label, button, or data display.",
+      "Don't add decorative motion: no orchestrated page loads, no bounce/elastic easing.",
+      "Don't use modals for tasks that can be inline.",
+      "Don't use hero-metric templates (big number, small label, supporting stats, gradient accent).",
+      "Don't use gradient text (background-clip: text with gradient backgrounds).",
+      "Don't apply glassmorphism (blur + transparency) as default decoration."
+    ]
+  }
+}

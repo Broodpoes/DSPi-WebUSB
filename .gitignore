@@ -17,11 +17,20 @@ firmware/build_release/*
 firmware/eclipse_build/*
 /pico-sdk
 /build
+build-rp2040/
+build-rp2350/
 .vscode
+__pycache__/
+*.pyc
+node_modules/
+web/app/dist/
 
 # Ignore all markdown files except key docs
 *.md
 !README.md
+!AGENTS.md
 !Documentation/current_architecture.md
 !Documentation/Roadmap.md
 !Documentation/Features/*.md
+!Documentation/web_interface_plan.md
+!docs/*.md
