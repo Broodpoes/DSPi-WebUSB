@@ -1,8 +1,9 @@
 import React, { useState, useEffect, useCallback, useRef } from 'react';
 import { WebUSBTransport } from '../transport.js';
 import { DSPiClient } from '../dspi-client.js';
-import { renderEQCurve } from '../eq-curve.js';
+import EQGraph from '@/components/eq-graph';
 import { renderMeters, parseMeterData } from '../meters.js';
+import { Link, Unlink } from 'lucide-react';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Slider } from '@/components/ui/slider';
@@ -25,16 +26,6 @@ const CH_NAMES_RP2040 = ['Master L', 'Master R', 'Out 1', 'Out 2', 'Out 3', 'Out
 
 function defaultBands() {
     return Array(10).fill(null).map(() => ({ type: 0, freq: 1000, Q: 0.707, gain_db: 0 }));
-}
-
-// ── EQ Curve Canvas ──────────────────────────────────────────────
-
-function EQCurveCanvas({ bands, className }) {
-    const canvasRef = useRef(null);
-    useEffect(() => {
-        if (canvasRef.current) renderEQCurve(canvasRef.current, bands, { sampleRate: DEFAULT_SR });
-    }, [bands]);
-    return <canvas ref={canvasRef} className={`w-full h-44 rounded-md bg-[hsl(var(--card))] ${className || ''}`} />;
 }
 
 // ── Meter Canvas ─────────────────────────────────────────────────
@@ -62,7 +53,7 @@ function MeterCanvas({ client, numChannels, channelNames }) {
         return () => { active = false; };
     }, [numChannels, channelNames]);
 
-    return <canvas ref={canvasRef} className="w-full h-52 rounded-md bg-[hsl(var(--card))]" />;
+    return <canvas ref={canvasRef} className="w-full h-52 rounded-md bg-card" />;
 }
 
 // ── EQ Band Table ────────────────────────────────────────────────
@@ -85,7 +76,9 @@ function EQBandTable({ bands, onBandChange }) {
                         <td className="py-0.5 px-1 text-muted-foreground">{i + 1}</td>
                         <td className="py-0.5 px-1">
                             <Select value={String(band.type)} onValueChange={v => onBandChange(i, 'type', parseInt(v))}>
-                                <SelectTrigger className="h-7 text-xs w-24"><SelectValue /></SelectTrigger>
+                                <SelectTrigger className="h-7 text-xs w-24">
+                                    <SelectValue>{FILTER_TYPES[band.type]}</SelectValue>
+                                </SelectTrigger>
                                 <SelectContent>
                                     {FILTER_TYPES.map((n, j) => <SelectItem key={j} value={String(j)}>{n}</SelectItem>)}
                                 </SelectContent>
@@ -113,19 +106,66 @@ function EQBandTable({ bands, onBandChange }) {
     );
 }
 
+// ── Preset Button (click to load, dblclick to rename) ─────────
+
+function PresetButton({ preset, index, active, onLoad, onRename }) {
+    const [editing, setEditing] = useState(false);
+    const [draft, setDraft] = useState('');
+    const inputRef = useRef(null);
+
+    const startEdit = () => {
+        setDraft(preset.name || `Slot ${index + 1}`);
+        setEditing(true);
+    };
+
+    const commit = () => {
+        setEditing(false);
+        const trimmed = draft.trim();
+        if (trimmed && trimmed !== preset.name) onRename(trimmed);
+    };
+
+    useEffect(() => {
+        if (editing && inputRef.current) inputRef.current.select();
+    }, [editing]);
+
+    if (editing) {
+        return (
+            <Input ref={inputRef}
+                className="h-7 text-xs px-2"
+                value={draft}
+                onChange={e => setDraft(e.target.value)}
+                onBlur={commit}
+                onKeyDown={e => { if (e.key === 'Enter') commit(); if (e.key === 'Escape') setEditing(false); }}
+                maxLength={31}
+            />
+        );
+    }
+
+    return (
+        <button
+            className={`text-xs px-2 py-1.5 rounded border transition-colors
+                ${active ? 'border-primary bg-primary/10 text-primary' : 'border-border hover:border-primary/50'}`}
+            onClick={onLoad}
+            onDoubleClick={e => { e.preventDefault(); startEdit(); }}
+        >
+            {preset.name || `Slot ${index + 1}`}
+        </button>
+    );
+}
+
 // ── Connection Screen ────────────────────────────────────────────
 
 function ConnectScreen({ onConnect }) {
     return (
-        <div className="flex flex-col items-center justify-center min-h-screen gap-6">
-            <h1 className="text-2xl font-bold text-primary">DSPi Web Interface</h1>
-            <p className="text-muted-foreground text-sm max-w-xs text-center">
-                Connect your DSPi device via WebUSB.
+        <div className="flex flex-col items-center justify-center min-h-screen gap-5">
+            <h1 className="text-sm font-medium tracking-tight">DSPi</h1>
+            <p className="text-muted-foreground text-xs max-w-xs text-center leading-relaxed">
+                Connect your DSPi device via WebUSB to begin.
             </p>
-            <Button size="lg" onClick={onConnect}>Connect via WebUSB</Button>
+            <Button size="lg" onClick={onConnect}>Connect</Button>
             <p className="text-xs text-muted-foreground">
-                Requires Chrome, Edge, or Opera.{' '}
-                <a href="https://caniuse.com/webusb" target="_blank" rel="noopener" className="text-primary underline">Browser support</a>
+                Chrome, Edge, or Opera required.{' '}
+                <a href="https://caniuse.com/webusb" target="_blank" rel="noopener" className="text-primary underline underline-offset-2">Browser support</a>
             </p>
         </div>
     );
@@ -153,10 +193,12 @@ export default function App() {
     // Preamp
     const [preampL, setPreampL] = useState(0);
     const [preampR, setPreampR] = useState(0);
+    const [preampLinked, setPreampLinked] = useState(true);
 
     // EQ
     const [eqTab, setEqTab] = useState(0);
     const [masterEq, setMasterEq] = useState({ left: defaultBands(), right: defaultBands() });
+    const [eqLinked, setEqLinked] = useState(true);
 
     // Output EQ
     const [outputEqTab, setOutputEqTab] = useState(2);
@@ -193,10 +235,21 @@ export default function App() {
             await loadState(c, nc, setPresets, setActivePreset, setMasterVolume, setIsMuted,
                             setPreampL, setPreampR, setMasterEq, setBypass);
 
+            // Fetch initial output EQ tab
+            {
+                const initOutCh = 2;
+                const bands = [];
+                for (let b = 0; b < NUM_MASTER_BANDS; b++) {
+                    bands.push(await c.getEqParam(initOutCh, b));
+                }
+                setOutputEqBands(prev => ({ ...prev, [initOutCh]: bands }));
+            }
+
             t.onDisconnect(() => {
                 setConnected(false);
                 setClient(null);
                 clientRef.current = null;
+                setOutputEqBands({});
             });
         } catch (e) {
             alert('WebUSB connection failed: ' + e.message);
@@ -206,14 +259,20 @@ export default function App() {
     // ── EQ band change ────────────────────────────────────────
 
     const handleEqBandChange = useCallback(async (channel, bandIdx, field, value) => {
-        const key = channel === 0 ? 'left' : 'right';
         setMasterEq(prev => {
-            const next = { ...prev, [key]: prev[key].map((b, i) => i === bandIdx ? { ...b, [field]: value } : b) };
-            const band = next[key][bandIdx];
-            clientRef.current?.setEqParam(channel, bandIdx, band.type, band.freq, band.Q, band.gain_db);
+            const channels = eqLinked ? ['left', 'right'] : [channel === 0 ? 'left' : 'right'];
+            const next = { ...prev };
+            for (const key of channels) {
+                next[key] = next[key].map((b, i) => i === bandIdx ? { ...b, [field]: value } : b);
+            }
+            const chNum = key => key === 'left' ? 0 : 1;
+            for (const key of channels) {
+                const band = next[key][bandIdx];
+                clientRef.current?.setEqParam(chNum(key), bandIdx, band.type, band.freq, band.Q, band.gain_db);
+            }
             return next;
         });
-    }, []);
+    }, [eqLinked]);
 
     const handleOutputEqBandChange = useCallback(async (channel, bandIdx, field, value) => {
         setOutputEqBands(prev => {
@@ -247,35 +306,34 @@ export default function App() {
 
     return (
         <div className="min-h-screen bg-background text-foreground">
-            {/* Header */}
-            <header className="flex items-center justify-between px-6 py-3 border-b">
-                <h1 className="text-lg font-semibold text-primary">DSPi Control Panel</h1>
-                <div className="flex items-center gap-2 text-sm text-muted-foreground">
-                    <span className="w-2 h-2 rounded-full bg-green-500" />
+            <header className="flex items-center justify-between px-5 py-2.5 ring-1 ring-foreground/5">
+                <h1 className="text-sm font-medium tracking-tight">DSPi</h1>
+                <div className="flex items-center gap-2 text-xs text-muted-foreground">
+                    <span className="w-1.5 h-1.5 rounded-full bg-primary" />
                     Connected
                     <Badge variant="outline">WebUSB</Badge>
                 </div>
             </header>
 
-            <div className="grid grid-cols-[240px_1fr_240px] gap-4 p-4 max-w-[1400px] mx-auto">
-                {/* Left: Presets + Preamp + Bypass */}
-                <div className="flex flex-col gap-4">
+            <div className="grid grid-cols-[240px_1fr_240px] gap-5 px-5 py-4 max-w-[1400px] mx-auto">
+                <div className="flex flex-col gap-3">
                     <Card>
                         <CardHeader className="pb-2"><CardTitle className="text-sm">Presets</CardTitle></CardHeader>
                         <CardContent>
                             <div className="grid grid-cols-2 gap-1.5">
                                 {presets.map((p, i) => (
-                                    <button key={i}
-                                        className={`text-xs px-2 py-1.5 rounded border transition-colors
-                                            ${i === activePreset ? 'border-primary bg-primary/10 text-primary' : 'border-border hover:border-primary/50'}`}
-                                        onClick={async () => {
+                                    <PresetButton key={i} preset={p} index={i} active={i === activePreset}
+                                        onLoad={async () => {
                                             await clientRef.current.presetLoad(i);
                                             setActivePreset(i);
                                             await loadState(clientRef.current, numChannels, setPresets, setActivePreset,
                                                 setMasterVolume, setIsMuted, setPreampL, setPreampR, setMasterEq, setBypass);
-                                        }}>
-                                        {p.name || `Slot ${i + 1}`}
-                                    </button>
+                                        }}
+                                        onRename={async (name) => {
+                                            await clientRef.current.presetSetName(i, name);
+                                            setPresets(prev => prev.map((pp, j) => j === i ? { ...pp, name } : pp));
+                                        }}
+                                    />
                                 ))}
                             </div>
                             <div className="flex gap-1.5 mt-3">
@@ -298,22 +356,53 @@ export default function App() {
                     </Card>
 
                     <Card>
-                        <CardHeader className="pb-2"><CardTitle className="text-sm">Preamp</CardTitle></CardHeader>
+                        <CardHeader className="pb-2">
+                            <div className="flex items-center justify-between">
+                                <CardTitle className="text-sm">Preamp</CardTitle>
+                                <Button
+                                    variant="ghost" size="icon"
+                                    className={`h-7 w-7 ${preampLinked ? 'text-primary' : 'text-muted-foreground'}`}
+                                    onClick={() => {
+                                        if (!preampLinked) setPreampR(preampL);
+                                        setPreampLinked(v => !v);
+                                    }}
+                                    title={preampLinked ? 'Unlink L/R preamp' : 'Link L/R preamp'}
+                                >
+                                    {preampLinked ? <Link className="h-3.5 w-3.5" /> : <Unlink className="h-3.5 w-3.5" />}
+                                </Button>
+                            </div>
+                        </CardHeader>
                         <CardContent className="space-y-3">
-                            <div className="flex items-center gap-3">
-                                <Label className="w-4 text-xs text-muted-foreground">L</Label>
-                                <Slider min={-30} max={12} step={0.5} value={[preampL]}
-                                        onValueChange={([v]) => { setPreampL(v); clientRef.current?.setPreampCh(0, v); }}
-                                        className="flex-1" />
-                                <span className="text-xs w-12 text-right">{preampL.toFixed(1)} dB</span>
-                            </div>
-                            <div className="flex items-center gap-3">
-                                <Label className="w-4 text-xs text-muted-foreground">R</Label>
-                                <Slider min={-30} max={12} step={0.5} value={[preampR]}
-                                        onValueChange={([v]) => { setPreampR(v); clientRef.current?.setPreampCh(1, v); }}
-                                        className="flex-1" />
-                                <span className="text-xs w-12 text-right">{preampR.toFixed(1)} dB</span>
-                            </div>
+                            {preampLinked ? (
+                                <div className="flex items-center gap-3">
+                                    <Label className="text-xs text-muted-foreground">L+R</Label>
+                                    <Slider min={-30} max={12} step={0.5} value={preampL}
+                                            onValueChange={v => {
+                                                setPreampL(v); setPreampR(v);
+                                                clientRef.current?.setPreampCh(0, v);
+                                                clientRef.current?.setPreampCh(1, v);
+                                            }}
+                                            className="flex-1" />
+                                    <span className="text-xs w-12 text-right">{preampL.toFixed(1)} dB</span>
+                                </div>
+                            ) : (
+                                <>
+                                    <div className="flex items-center gap-3">
+                                        <Label className="w-4 text-xs text-muted-foreground">L</Label>
+                                        <Slider min={-30} max={12} step={0.5} value={preampL}
+                                                onValueChange={v => { setPreampL(v); clientRef.current?.setPreampCh(0, v); }}
+                                                className="flex-1" />
+                                        <span className="text-xs w-12 text-right">{preampL.toFixed(1)} dB</span>
+                                    </div>
+                                    <div className="flex items-center gap-3">
+                                        <Label className="w-4 text-xs text-muted-foreground">R</Label>
+                                        <Slider min={-30} max={12} step={0.5} value={preampR}
+                                                onValueChange={v => { setPreampR(v); clientRef.current?.setPreampCh(1, v); }}
+                                                className="flex-1" />
+                                        <span className="text-xs w-12 text-right">{preampR.toFixed(1)} dB</span>
+                                    </div>
+                                </>
+                            )}
                         </CardContent>
                     </Card>
 
@@ -326,21 +415,43 @@ export default function App() {
                 </div>
 
                 {/* Center: EQ */}
-                <div className="flex flex-col gap-4">
+                <div className="flex flex-col gap-5">
                     <Card>
                         <CardHeader className="pb-2">
                             <div className="flex items-center justify-between">
                                 <CardTitle className="text-sm">Master EQ</CardTitle>
-                                <Tabs value={String(eqTab)} onValueChange={v => setEqTab(parseInt(v))}>
-                                    <TabsList className="h-7">
-                                        <TabsTrigger value="0" className="text-xs px-3">Left</TabsTrigger>
-                                        <TabsTrigger value="1" className="text-xs px-3">Right</TabsTrigger>
-                                    </TabsList>
-                                </Tabs>
+                                <div className="flex items-center gap-2">
+                                    {eqLinked ? (
+                                        <span className="text-xs text-muted-foreground">L+R</span>
+                                    ) : (
+                                        <Tabs value={String(eqTab)} onValueChange={v => setEqTab(parseInt(v))}>
+                                            <TabsList className="h-7">
+                                                <TabsTrigger value="0" className="text-xs px-3">Left</TabsTrigger>
+                                                <TabsTrigger value="1" className="text-xs px-3">Right</TabsTrigger>
+                                            </TabsList>
+                                        </Tabs>
+                                    )}
+                                    <Button
+                                        variant="ghost" size="icon"
+                                        className={`h-7 w-7 ${eqLinked ? 'text-primary' : 'text-muted-foreground'}`}
+                                        onClick={() => {
+                                            if (!eqLinked) {
+                                                // Linking: copy active channel to the other
+                                                const src = eqTab === 0 ? 'left' : 'right';
+                                                const dst = eqTab === 0 ? 'right' : 'left';
+                                                setMasterEq(prev => ({ ...prev, [dst]: prev[src].map(b => ({ ...b })) }));
+                                            }
+                                            setEqLinked(v => !v);
+                                        }}
+                                        title={eqLinked ? 'Unlink L/R channels' : 'Link L/R channels'}
+                                    >
+                                        {eqLinked ? <Link className="h-3.5 w-3.5" /> : <Unlink className="h-3.5 w-3.5" />}
+                                    </Button>
+                                </div>
                             </div>
                         </CardHeader>
                         <CardContent className="space-y-3">
-                            <EQCurveCanvas bands={eqBands} />
+                            <EQGraph bands={eqBands} onBandChange={(i, f, v) => handleEqBandChange(eqTab, i, f, v)} sampleRate={DEFAULT_SR} />
                             <EQBandTable bands={eqBands} onBandChange={(i, f, v) => handleEqBandChange(eqTab, i, f, v)} />
                         </CardContent>
                     </Card>
@@ -357,22 +468,22 @@ export default function App() {
                                     ))}
                                 </TabsList>
                             </Tabs>
-                            <EQCurveCanvas bands={outBands} />
+                            <EQGraph bands={outBands} onBandChange={(i, f, v) => handleOutputEqBandChange(outputEqTab, i, f, v)} sampleRate={DEFAULT_SR} />
                             <EQBandTable bands={outBands} onBandChange={(i, f, v) => handleOutputEqBandChange(outputEqTab, i, f, v)} />
                         </CardContent>
                     </Card>
                 </div>
 
                 {/* Right: Volume + Meters + Info */}
-                <div className="flex flex-col gap-4">
+                <div className="flex flex-col gap-3">
                     <Card>
                         <CardHeader className="pb-2"><CardTitle className="text-sm">Master Volume</CardTitle></CardHeader>
                         <CardContent className="flex flex-col items-center gap-3">
                             <span className="text-2xl font-bold text-primary">
                                 {isMuted ? 'MUTE' : `${masterVolume.toFixed(1)} dB`}
                             </span>
-                            <Slider min={-127} max={0} step={0.5} value={[isMuted ? -128 : masterVolume]}
-                                    onValueChange={([v]) => {
+                            <Slider min={-127} max={0} step={0.5} value={isMuted ? -128 : masterVolume}
+                                    onValueChange={v => {
                                         setMasterVolume(v);
                                         setIsMuted(false);
                                         clientRef.current?.setMasterVolume(v);

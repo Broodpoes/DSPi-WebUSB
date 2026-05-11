@@ -19,31 +19,31 @@
  */
 function renderBar(ctx, x, y, w, h, peak, clipped, label) {
     // Background
-    ctx.fillStyle = '#111';
+    ctx.fillStyle = '#101016';
     ctx.fillRect(x, y, w, h);
 
     // Level bar (green → yellow → red gradient)
     const barH = h * Math.min(peak, 1.0);
     const gradient = ctx.createLinearGradient(x, y + h, x, y);
-    gradient.addColorStop(0, '#00cc44');
-    gradient.addColorStop(0.7, '#cccc00');
-    gradient.addColorStop(0.85, '#ff6600');
-    gradient.addColorStop(1, '#ff0000');
+    gradient.addColorStop(0, '#3a3a4c');
+    gradient.addColorStop(0.7, '#7a7a8e');
+    gradient.addColorStop(0.85, '#a8908a');
+    gradient.addColorStop(1, '#c4908c');
     ctx.fillStyle = gradient;
     ctx.fillRect(x, y + h - barH, w, barH);
 
     // Clip indicator
     if (clipped) {
-        ctx.fillStyle = '#ff0000';
+        ctx.fillStyle = '#c4908c';
         ctx.fillRect(x, y - 4, w, 3);
     } else {
-        ctx.fillStyle = '#333';
+        ctx.fillStyle = '#2a2a3a';
         ctx.fillRect(x, y - 4, w, 3);
     }
 
     // Label
     if (label) {
-        ctx.fillStyle = '#888';
+        ctx.fillStyle = '#9999aa';
         ctx.font = '9px monospace';
         ctx.textAlign = 'center';
         ctx.fillText(label, x + w / 2, y + h + 11);
@@ -72,7 +72,7 @@ export function renderMeters(canvas, meterData, numChannels, channelNames) {
     const ch = canvas.clientHeight;
 
     ctx.clearRect(0, 0, cw, ch);
-    ctx.fillStyle = '#0d0d1a';
+    ctx.fillStyle = '#0c0c12';
     ctx.fillRect(0, 0, cw, ch);
 
     const meterH = ch - 40;
@@ -89,7 +89,7 @@ export function renderMeters(canvas, meterData, numChannels, channelNames) {
     }
 
     // CPU load
-    ctx.fillStyle = '#888';
+    ctx.fillStyle = '#9999aa';
     ctx.font = '10px monospace';
     ctx.textAlign = 'left';
     const cpu0 = meterData.cpu0 != null ? meterData.cpu0 : 0;
