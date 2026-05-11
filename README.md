@@ -1,5 +1,8 @@
 # DSPi Firmware
 
+
+> **Fork Note:** The web interface additions in this fork (JavaScript frontend, Python bridge, WebUSB firmware patches) were developed with significant AI assistance.
+
 **DSPi** transforms a Raspberry Pi Pico or other RP2040-based board into a very competent and inexpensive little digital audio processor. It acts as a USB sound card with an onboard DSP engine, allowing you to make use of essential tools like room correction, active crossovers, parametric EQ, time alignment, loudness compensation, and headphone crossfeed.
 
 It is my hope that the RP2040 and RP2350 will garner a reputation as the "swiss army knife of audio for less than a cup of coffee".
