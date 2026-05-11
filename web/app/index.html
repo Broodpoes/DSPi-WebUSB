@@ -1,0 +1,517 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>DSPi Control Panel</title>
+    <link rel="stylesheet" href="style.css">
+</head>
+<body>
+    <!-- Header -->
+    <div class="header">
+        <h1>DSPi Control Panel</h1>
+        <div class="status">
+            <span class="dot" id="statusDot"></span>
+            <span id="statusText">Disconnected</span>
+            <span class="transport-label" id="transportLabel"></span>
+        </div>
+    </div>
+
+    <!-- Main 3-column layout -->
+    <div class="main" id="mainLayout" style="display:none;">
+
+        <!-- Left: Presets -->
+        <div class="sidebar">
+            <h2>Presets</h2>
+            <div class="preset-grid" id="presetGrid"></div>
+            <div style="display:flex; gap:6px; flex-wrap:wrap;">
+                <button class="btn-outline" onclick="app.factoryReset()">Factory Reset</button>
+                <button class="btn-outline" onclick="app.saveCurrentPreset()">Save Current</button>
+            </div>
+
+            <h2 style="margin-top:20px;">Preamp</h2>
+            <div class="preamp-row">
+                <label>L</label>
+                <input type="range" min="-30" max="12" step="0.5" value="0" id="preampL"
+                       oninput="app.setPreamp(0, this.value)">
+                <span class="val" id="preampLVal">0.0 dB</span>
+            </div>
+            <div class="preamp-row" style="margin-top:6px;">
+                <label>R</label>
+                <input type="range" min="-30" max="12" step="0.5" value="0" id="preampR"
+                       oninput="app.setPreamp(1, this.value)">
+                <span class="val" id="preampRVal">0.0 dB</span>
+            </div>
+
+            <h2 style="margin-top:20px;">Master EQ Bypass</h2>
+            <label class="toggle">
+                <input type="checkbox" id="eqBypass" onchange="app.setBypass(this.checked)">
+                <span class="slider"></span>
+            </label>
+        </div>
+
+        <!-- Center: EQ -->
+        <div class="center">
+            <div class="section">
+                <h3>Master EQ <span class="badge" id="eqChannelLabel">Left</span></h3>
+                <canvas class="eq-canvas" id="eqCanvas"></canvas>
+                <div class="channel-tabs" id="eqTabs"></div>
+                <table class="eq-bands" id="eqBands">
+                    <thead><tr><th>#</th><th>Type</th><th>Freq (Hz)</th><th>Q</th><th>Gain (dB)</th></tr></thead>
+                    <tbody id="eqBandsBody"></tbody>
+                </table>
+            </div>
+
+            <div class="section">
+                <h3>Output EQ</h3>
+                <div class="channel-tabs" id="outputEqTabs"></div>
+                <canvas class="eq-canvas" id="outputEqCanvas"></canvas>
+                <table class="eq-bands">
+                    <thead><tr><th>#</th><th>Type</th><th>Freq (Hz)</th><th>Q</th><th>Gain (dB)</th></tr></thead>
+                    <tbody id="outputEqBandsBody"></tbody>
+                </table>
+            </div>
+        </div>
+
+        <!-- Right: Volume + Meters -->
+        <div class="right-panel">
+            <h2>Master Volume</h2>
+            <div class="volume-section">
+                <div class="vol-value" id="volValue">-20.0 dB</div>
+                <input type="range" class="volume-slider" id="masterVol" min="-127" max="0" step="0.5" value="-20"
+                       oninput="app.setMasterVolume(this.value)">
+                <div>
+                    <button class="mute-btn" id="muteBtn" onclick="app.toggleMute()">Mute</button>
+                </div>
+            </div>
+
+            <h2>Meters</h2>
+            <canvas class="meter-canvas" id="meterCanvas"></canvas>
+
+            <div style="font-size:11px; color:var(--text-dim); text-align:center;">
+                <button class="btn-outline" style="font-size:10px; padding:3px 8px;" onclick="app.clearClips()">Clear Clips</button>
+            </div>
+
+            <h2>Device Info</h2>
+            <div style="font-size:11px; color:var(--text-dim); line-height:1.6;" id="deviceInfo">
+                Platform: —<br>Serial: —<br>Firmware: —
+            </div>
+        </div>
+    </div>
+
+    <!-- Connection screen (shown when not connected) -->
+    <div class="connect-panel" id="connectPanel">
+        <h1 style="font-size:24px; color:var(--accent);">DSPi Web Interface</h1>
+        <p>Connect to your DSPi device via WebUSB (Chrome) or through the Python bridge server.</p>
+        <button class="btn" id="connectWebUSB" onclick="app.connectWebUSB()">Connect via WebUSB</button>
+        <button class="btn-outline" onclick="app.connectBridge()">Connect via Bridge</button>
+        <p style="font-size:11px;">Bridge: run <code style="background:var(--surface2); padding:2px 6px; border-radius:3px;">python bridge.py</code> then click above</p>
+    </div>
+
+    <script type="module">
+        import { WebUSBTransport, WebSocketTransport } from './transport.js';
+        import { DSPiClient } from './dspi-client.js';
+        import { renderEQCurve } from './eq-curve.js';
+        import { renderMeters, parseMeterData } from './meters.js';
+
+        // Filter type names
+        const FILTER_TYPES = ['Flat', 'Peaking', 'Low Shelf', 'High Shelf', 'Low Pass', 'High Pass'];
+        const NUM_MASTER_BANDS = 10;
+        const NUM_BANDS = 10;
+        const DEFAULT_SR = 48000;
+
+        // Channel names for the current platform
+        const CH_NAMES_RP2350 = ['Master L', 'Master R', 'Out 1', 'Out 2', 'Out 3', 'Out 4', 'Out 5', 'Out 6', 'Out 7', 'Out 8', 'PDM Sub'];
+        const CH_NAMES_RP2040 = ['Master L', 'Master R', 'Out 1', 'Out 2', 'Out 3', 'Out 4', 'PDM Sub'];
+
+        // ── App State ─────────────────────────────────────────────────────
+
+        window.app = {
+            client: null,
+            transport: null,
+            numChannels: 7,
+            channelNames: CH_NAMES_RP2040,
+            masterEq: { left: Array(10).fill(null).map(() => ({type:0,freq:1000,Q:1,gain_db:0})),
+                        right: Array(10).fill(null).map(() => ({type:0,freq:1000,Q:1,gain_db:0})) },
+            outputEqBands: {},  // channel -> bands array
+            eqTab: 0,          // 0=left, 1=right
+            outputEqTab: 2,    // first output channel
+            activePreset: -1,
+            masterVolume: -20,
+            isMuted: false,
+            meterData: { peaks: new Float64Array(11), clips: 0, cpu0: 0, cpu1: 0 },
+            _meterInterval: null,
+
+            // ── Connection ────────────────────────────────────────────
+
+            async connectWebUSB() {
+                try {
+                    const t = new WebUSBTransport();
+                    await t.connect();
+                    t.onDisconnect(() => this._onDisconnect());
+                    this.transport = t;
+                    this.client = new DSPiClient(t);
+                    await this._onConnect();
+                } catch (e) {
+                    alert("WebUSB connection failed: " + e.message);
+                }
+            },
+
+            async connectBridge() {
+                try {
+                    const t = new WebSocketTransport();
+                    await t.connect();
+                    t.onDisconnect(() => this._onDisconnect());
+                    this.transport = t;
+                    this.client = new DSPiClient(t);
+                    await this._onConnect();
+                } catch (e) {
+                    alert("Bridge connection failed: " + e.message +
+                          "\n\nMake sure bridge.py is running: python web/bridge/bridge.py");
+                }
+            },
+
+            async _onConnect() {
+                document.getElementById('connectPanel').style.display = 'none';
+                document.getElementById('mainLayout').style.display = 'grid';
+                document.getElementById('statusDot').classList.add('connected');
+                document.getElementById('statusText').textContent = 'Connected';
+                document.getElementById('transportLabel').textContent =
+                    this.transport.name === 'WebUSB' ? '(WebUSB)' : '(Bridge)';
+
+                // Detect platform
+                const platform = await this.client.getPlatform();
+                this.numChannels = platform === 1 ? 11 : 7;
+                this.channelNames = platform === 1 ? CH_NAMES_RP2350 : CH_NAMES_RP2040;
+
+                const serial = await this.client.getSerial();
+                document.getElementById('deviceInfo').innerHTML =
+                    `Platform: ${platform === 1 ? 'RP2350' : 'RP2040'}<br>Serial: ${serial}<br>Channels: ${this.numChannels}`;
+
+                // Load state
+                await this._loadPresetState();
+                await this._loadMasterVolume();
+                await this._loadPreamp();
+                await this._loadMasterEQ();
+                this._buildEQTabs();
+                this._selectEqTab(0);
+                this._buildOutputEqTabs();
+                this._selectOutputEqTab(2);
+
+                // Start metering
+                this._startMeters();
+            },
+
+            _onDisconnect() {
+                document.getElementById('connectPanel').style.display = 'flex';
+                document.getElementById('mainLayout').style.display = 'none';
+                document.getElementById('statusDot').classList.remove('connected');
+                document.getElementById('statusText').textContent = 'Disconnected';
+                document.getElementById('transportLabel').textContent = '';
+                this.client = null;
+                this.transport = null;
+                this._stopMeters();
+            },
+
+            // ── Presets ───────────────────────────────────────────────
+
+            async _loadPresetState() {
+                const active = await this.client.presetGetActive();
+                this.activePreset = active;
+
+                const grid = document.getElementById('presetGrid');
+                grid.innerHTML = '';
+                for (let i = 0; i < 10; i++) {
+                    const name = await this.client.presetGetName(i);
+                    const slot = document.createElement('div');
+                    slot.className = 'preset-slot' + (i === active ? ' active' : '');
+                    slot.innerHTML = `<div class="slot-name">${name || ('Slot ' + (i + 1))}</div>
+                        <div class="slot-actions">
+                            <button onclick="app.loadPreset(${i})">Load</button>
+                            <button onclick="app.savePreset(${i})">Save</button>
+                        </div>`;
+                    grid.appendChild(slot);
+                }
+            },
+
+            async loadPreset(slot) {
+                await this.client.presetLoad(slot);
+                await this._loadPresetState();
+                await this._loadMasterVolume();
+                await this._loadMasterEQ();
+            },
+
+            async savePreset(slot) {
+                await this.client.presetSave(slot);
+                await this._loadPresetState();
+            },
+
+            async saveCurrentPreset() {
+                if (this.activePreset >= 0) {
+                    await this.savePreset(this.activePreset);
+                }
+            },
+
+            async factoryReset() {
+                if (confirm("Reset all DSP parameters to defaults?")) {
+                    await this.client.factoryReset();
+                    await this._loadPresetState();
+                    await this._loadMasterVolume();
+                    await this._loadMasterEQ();
+                }
+            },
+
+            // ── Master Volume ─────────────────────────────────────────
+
+            async _loadMasterVolume() {
+                const db = await this.client.getMasterVolume();
+                this.masterVolume = db;
+                this.isMuted = db <= -128;
+                document.getElementById('masterVol').value = Math.max(db, -127);
+                document.getElementById('volValue').textContent = this.isMuted ? 'MUTE' : db.toFixed(1) + ' dB';
+                document.getElementById('muteBtn').classList.toggle('muted', this.isMuted);
+            },
+
+            async setMasterVolume(val) {
+                const db = parseFloat(val);
+                this.masterVolume = db;
+                this.isMuted = false;
+                await this.client.setMasterVolume(db);
+                document.getElementById('volValue').textContent = db.toFixed(1) + ' dB';
+                document.getElementById('muteBtn').classList.remove('muted');
+            },
+
+            async toggleMute() {
+                if (this.isMuted) {
+                    await this.client.setMasterVolume(this.masterVolume > -127 ? this.masterVolume : -20);
+                    this.isMuted = false;
+                } else {
+                    this.masterVolume = parseFloat(document.getElementById('masterVol').value);
+                    await this.client.setMasterVolume(-128);
+                    this.isMuted = true;
+                }
+                document.getElementById('volValue').textContent = this.isMuted ? 'MUTE' : this.masterVolume.toFixed(1) + ' dB';
+                document.getElementById('muteBtn').classList.toggle('muted', this.isMuted);
+            },
+
+            // ── Preamp ────────────────────────────────────────────────
+
+            async _loadPreamp() {
+                const l = await this.client.getPreampCh(0);
+                const r = await this.client.getPreampCh(1);
+                document.getElementById('preampL').value = l;
+                document.getElementById('preampR').value = r;
+                document.getElementById('preampLVal').textContent = l.toFixed(1) + ' dB';
+                document.getElementById('preampRVal').textContent = r.toFixed(1) + ' dB';
+            },
+
+            async setPreamp(ch, val) {
+                const db = parseFloat(val);
+                await this.client.setPreampCh(ch, db);
+                document.getElementById(ch === 0 ? 'preampLVal' : 'preampRVal').textContent = db.toFixed(1) + ' dB';
+            },
+
+            // ── Bypass ────────────────────────────────────────────────
+
+            async setBypass(on) {
+                await this.client.setBypass(on);
+            },
+
+            // ── Master EQ ─────────────────────────────────────────────
+
+            async _loadMasterEQ() {
+                for (const chIdx of [0, 1]) {
+                    const key = chIdx === 0 ? 'left' : 'right';
+                    for (let b = 0; b < NUM_MASTER_BANDS; b++) {
+                        this.masterEq[key][b] = await this.client.getEqParam(chIdx, b);
+                    }
+                }
+                this._renderEQTable();
+                this._renderEQCurve();
+            },
+
+            _buildEQTabs() {
+                const tabs = document.getElementById('eqTabs');
+                tabs.innerHTML = '';
+                ['Left', 'Right'].forEach((name, i) => {
+                    const btn = document.createElement('button');
+                    btn.textContent = name;
+                    btn.className = i === this.eqTab ? 'active' : '';
+                    btn.onclick = () => this._selectEqTab(i);
+                    tabs.appendChild(btn);
+                });
+            },
+
+            _selectEqTab(idx) {
+                this.eqTab = idx;
+                document.querySelectorAll('#eqTabs button').forEach((b, i) =>
+                    b.classList.toggle('active', i === idx));
+                document.getElementById('eqChannelLabel').textContent = idx === 0 ? 'Left' : 'Right';
+                this._renderEQTable();
+                this._renderEQCurve();
+            },
+
+            _renderEQTable() {
+                const bands = this.eqTab === 0 ? this.masterEq.left : this.masterEq.right;
+                const tbody = document.getElementById('eqBandsBody');
+                tbody.innerHTML = '';
+                for (let b = 0; b < NUM_MASTER_BANDS; b++) {
+                    const band = bands[b];
+                    const tr = document.createElement('tr');
+                    if (band.type === 0) tr.className = 'flat';
+                    tr.innerHTML = `
+                        <td>${b + 1}</td>
+                        <td><select data-band="${b}" data-field="type">
+                            ${FILTER_TYPES.map((n, i) => `<option value="${i}" ${band.type === i ? 'selected' : ''}>${n}</option>`).join('')}
+                        </select></td>
+                        <td><input type="number" data-band="${b}" data-field="freq" value="${band.freq.toFixed(1)}" min="10" max="20000" step="1"></td>
+                        <td><input type="number" data-band="${b}" data-field="Q" value="${band.Q.toFixed(2)}" min="0.1" max="20" step="0.01"></td>
+                        <td><input type="number" data-band="${b}" data-field="gain" value="${band.gain_db.toFixed(1)}" min="-30" max="12" step="0.1"></td>`;
+                    tbody.appendChild(tr);
+
+                    // Wire change events
+                    tr.querySelectorAll('select, input').forEach(el => {
+                        el.addEventListener('change', (e) => this._onEqBandChange(e));
+                    });
+                }
+            },
+
+            async _onEqBandChange(e) {
+                const bandIdx = parseInt(e.target.dataset.band);
+                const field = e.target.dataset.field;
+                const bands = this.eqTab === 0 ? this.masterEq.left : this.masterEq.right;
+                const band = bands[bandIdx];
+
+                if (field === 'type') band.type = parseInt(e.target.value);
+                else if (field === 'freq') band.freq = parseFloat(e.target.value);
+                else if (field === 'Q') band.Q = parseFloat(e.target.value);
+                else if (field === 'gain') band.gain_db = parseFloat(e.target.value);
+
+                // Send to device
+                await this.client.setEqParam(this.eqTab, bandIdx, band.type, band.freq, band.Q, band.gain_db);
+
+                // Update flat row styling
+                e.target.closest('tr').classList.toggle('flat', band.type === 0);
+                this._renderEQCurve();
+            },
+
+            _renderEQCurve() {
+                const bands = this.eqTab === 0 ? this.masterEq.left : this.masterEq.right;
+                const canvas = document.getElementById('eqCanvas');
+                renderEQCurve(canvas, bands, { sampleRate: DEFAULT_SR });
+            },
+
+            // ── Output EQ ─────────────────────────────────────────────
+
+            _buildOutputEqTabs() {
+                const tabs = document.getElementById('outputEqTabs');
+                tabs.innerHTML = '';
+                // Output channels start at index 2
+                for (let i = 2; i < this.numChannels; i++) {
+                    const btn = document.createElement('button');
+                    btn.textContent = this.channelNames[i] || `Out ${i - 1}`;
+                    btn.className = i === this.outputEqTab ? 'active' : '';
+                    const ch = i;
+                    btn.onclick = () => this._selectOutputEqTab(ch);
+                    tabs.appendChild(btn);
+                }
+            },
+
+            async _selectOutputEqTab(chIdx) {
+                this.outputEqTab = chIdx;
+                document.querySelectorAll('#outputEqTabs button').forEach(b => b.classList.remove('active'));
+                const btns = document.querySelectorAll('#outputEqTabs button');
+                const tabIdx = chIdx - 2;
+                if (btns[tabIdx]) btns[tabIdx].classList.add('active');
+
+                if (!this.outputEqBands[chIdx]) {
+                    this.outputEqBands[chIdx] = [];
+                    for (let b = 0; b < NUM_BANDS; b++) {
+                        this.outputEqBands[chIdx][b] = await this.client.getEqParam(chIdx, b);
+                    }
+                }
+                this._renderOutputEqTable();
+                this._renderOutputEqCurve();
+            },
+
+            _renderOutputEqTable() {
+                const bands = this.outputEqBands[this.outputEqTab] || [];
+                const tbody = document.getElementById('outputEqBandsBody');
+                tbody.innerHTML = '';
+                for (let b = 0; b < NUM_BANDS; b++) {
+                    const band = bands[b] || { type: 0, freq: 1000, Q: 1, gain_db: 0 };
+                    const tr = document.createElement('tr');
+                    if (band.type === 0) tr.className = 'flat';
+                    tr.innerHTML = `
+                        <td>${b + 1}</td>
+                        <td><select data-band="${b}" data-field="type">
+                            ${FILTER_TYPES.map((n, i) => `<option value="${i}" ${band.type === i ? 'selected' : ''}>${n}</option>`).join('')}
+                        </select></td>
+                        <td><input type="number" data-band="${b}" data-field="freq" value="${band.freq.toFixed(1)}" min="10" max="20000" step="1"></td>
+                        <td><input type="number" data-band="${b}" data-field="Q" value="${band.Q.toFixed(2)}" min="0.1" max="20" step="0.01"></td>
+                        <td><input type="number" data-band="${b}" data-field="gain" value="${band.gain_db.toFixed(1)}" min="-30" max="12" step="0.1"></td>`;
+                    tbody.appendChild(tr);
+
+                    tr.querySelectorAll('select, input').forEach(el => {
+                        el.addEventListener('change', (e) => this._onOutputEqBandChange(e));
+                    });
+                }
+            },
+
+            async _onOutputEqBandChange(e) {
+                const bandIdx = parseInt(e.target.dataset.band);
+                const field = e.target.dataset.field;
+                const bands = this.outputEqBands[this.outputEqTab];
+                if (!bands) return;
+                const band = bands[bandIdx];
+
+                if (field === 'type') band.type = parseInt(e.target.value);
+                else if (field === 'freq') band.freq = parseFloat(e.target.value);
+                else if (field === 'Q') band.Q = parseFloat(e.target.value);
+                else if (field === 'gain') band.gain_db = parseFloat(e.target.value);
+
+                await this.client.setEqParam(this.outputEqTab, bandIdx, band.type, band.freq, band.Q, band.gain_db);
+                e.target.closest('tr').classList.toggle('flat', band.type === 0);
+                this._renderOutputEqCurve();
+            },
+
+            _renderOutputEqCurve() {
+                const bands = this.outputEqBands[this.outputEqTab] || [];
+                const canvas = document.getElementById('outputEqCanvas');
+                renderEQCurve(canvas, bands, { sampleRate: DEFAULT_SR });
+            },
+
+            // ── Metering ──────────────────────────────────────────────
+
+            _startMeters() {
+                if (this._meterInterval) clearInterval(this._meterInterval);
+
+                const poll = async () => {
+                    if (!this.client) return;
+                    try {
+                        const raw = await this.client.getStatus(9);
+                        this.meterData = parseMeterData(raw, this.numChannels);
+                        renderMeters(document.getElementById('meterCanvas'), this.meterData,
+                                     this.numChannels, this.channelNames);
+                    } catch (e) { /* ignore */ }
+                };
+
+                this._meterInterval = setInterval(poll, 100);
+                poll();
+            },
+
+            _stopMeters() {
+                if (this._meterInterval) {
+                    clearInterval(this._meterInterval);
+                    this._meterInterval = null;
+                }
+            },
+
+            async clearClips() {
+                if (!this.client) return;
+                await this.client.clearClips();
+            },
+        };
+    </script>
+</body>
+</html>

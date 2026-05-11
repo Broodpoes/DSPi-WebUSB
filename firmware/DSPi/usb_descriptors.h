@@ -113,4 +113,14 @@ extern const uint8_t ms_os_string_descriptor[MS_OS_STRING_DESC_LEN];
 extern const uint8_t ms_compat_id_descriptor[MS_COMPAT_ID_DESC_LEN];
 extern const uint8_t ms_ext_prop_descriptor[MS_EXT_PROP_DESC_LEN];
 
+// ----------------------------------------------------------------------------
+// WEBUSB / BOS DESCRIPTORS
+// ----------------------------------------------------------------------------
+
+#define WEBUSB_VENDOR_CODE  0x02
+
+extern const uint8_t bos_descriptor[];
+extern const uint16_t bos_descriptor_len;
+extern const uint8_t webusb_url_descriptor[];
+
 #endif // USB_DESCRIPTORS_H
