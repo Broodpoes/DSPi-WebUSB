@@ -3,9 +3,6 @@ name: Build Firmware
 on:
   push:
     branches: [main]
-    paths:
-      - 'firmware/**'
-      - '.github/workflows/build-firmware.yml'
     tags: ['v*']
   pull_request:
     paths:
